@@ -29,10 +29,25 @@ where
     Self: ConnectorIntegration<Flow, Request, Response>,{
     fn build_headers(
         &self,
-        _req: &types::RouterData<Flow, Request, Response>,
+        req: &types::RouterData<Flow, Request, Response>,
         _connectors: &settings::Connectors,
     ) -> CustomResult<Vec<(String, String)>, errors::ConnectorError> {
-        todo!()
+         let mut headers = vec![(
+            headers::CONTENT_TYPE.to_string(),
+            self.get_content_type().to_string(),
+        )];
+        let access_token = req
+            .access_token
+            .clone()
+            .ok_or(errors::ConnectorError::FailedToObtainAuthType)?;
+
+        let auth_header = (
+            headers::AUTHORIZATION.to_string(),
+            format!("Bearer {}", access_token.token),
+        );
+
+        headers.push(auth_header);
+        Ok(headers)
     }
 }
 
@@ -42,8 +57,7 @@ impl ConnectorCommon for Trustpay {
     }
 
     fn common_get_content_type(&self) -> &'static str {
-        todo!()
-        // Ex: "application/x-www-form-urlencoded"
+        "application/json"
     }
 
     fn base_url<'a>(&self, connectors: &'a settings::Connectors) -> &'a str {
@@ -54,7 +68,7 @@ impl ConnectorCommon for Trustpay {
         let auth: trustpay::TrustpayAuthType = auth_type
             .try_into()
             .change_context(errors::ConnectorError::FailedToObtainAuthType)?;
-        Ok(vec![(headers::AUTHORIZATION.to_string(), auth.api_key)])
+        Ok(vec![(headers::X_API_KEY.to_string(), auth.api_key)])
     }
 }
 
