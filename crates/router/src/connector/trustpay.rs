@@ -42,10 +42,8 @@ where
             .ok_or(errors::ConnectorError::FailedToObtainAuthType)?;
 
         let auth_header = (
-            headers::AUTHORIZATION.to_string(),
-            format!("Bearer {}", access_token.token),
+            headers::X_API_KEY.to_string(), access_token.token,
         );
-
         headers.push(auth_header);
         Ok(headers)
     }
@@ -273,13 +271,17 @@ impl
         self.common_get_content_type()
     }
 
-    fn get_url(&self, _req: &types::PaymentsAuthorizeRouterData, _connectors: &settings::Connectors,) -> CustomResult<String,errors::ConnectorError> {
-        todo!()
+    fn get_url(&self, _req: &types::PaymentsAuthorizeRouterData, connectors: &settings::Connectors,) -> CustomResult<String,errors::ConnectorError> {
+        Ok(format!(
+            "{}{}",
+            self.base_url(connectors),
+            "api/v1/purchase"
+        ))
     }
 
     fn get_request_body(&self, req: &types::PaymentsAuthorizeRouterData) -> CustomResult<Option<String>,errors::ConnectorError> {
         let trustpay_req =
-            utils::Encode::<trustpay::TrustpayPaymentsRequest>::convert_and_encode(req).change_context(errors::ConnectorError::RequestEncodingFailed)?;
+            utils::Encode::<trustpay::TrustpayCard>::convert_and_encode(req).change_context(errors::ConnectorError::RequestEncodingFailed)?;
         Ok(Some(trustpay_req))
     }
 
